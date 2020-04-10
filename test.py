@@ -1,0 +1,168 @@
+import openpyxl
+import string
+import tkinter.filedialog
+import tkinter as tk
+
+# SRS 열기
+SRSfinder = tk.Tk()
+SRSfinder.withdraw()
+SRSpath = tk.filedialog.askopenfilename(filetypes=[('Microsoft Excel File(.xlsx)', '.xlsx'), ('All files', '*')],
+                                        title='Open SRS File',
+                                        initialfile='*.xlsx')
+SRSwb = openpyxl.load_workbook(SRSpath)
+SRSsht = SRSwb.active
+
+
+# 기능사양분석서(FSA) 생성
+FSAwb = openpyxl.Workbook()
+FSAsht = FSAwb.active
+
+
+### SRS 양식 ###########################################################################################################
+# SRS 첫 행/열, 끝 행/열
+SRS_start_row = SRSsht.min_row
+SRS_start_column = SRSsht.min_column
+SRS_end_row = SRSsht.max_row
+SRS_end_column = SRSsht.max_column
+
+########################################################################################################################
+
+### 기능사양분석서 포맷 ##################################################################################################
+# 기능사양 분석서 시작 행/열
+FSA_start_row = 1
+FSA_start_column = 1
+FSA_end_row = 2
+FSA_end_column = 16
+
+# 항목
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column).value = 'Level1\nSRS Item ID'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 1).value = 'Level2\nSRS Item ID'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 2).value = 'Level3\nSRS Item ID'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 3).value = 'Level4\nSRS Item ID'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 4).value = 'Module Location'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 5).value = 'Requirement'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 6).value = 'REQ ID'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 7).value = 'Description'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 8).value = 'External Input'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 11).value = 'CCP'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 13).value = 'External Output'
+FSAsht.cell(row=FSA_start_row, column=FSA_start_column + 15).value = 'Etc.'
+FSAsht.cell(row=FSA_start_row + 1, column=FSA_start_column + 8).value = 'Characteristic'
+FSAsht.cell(row=FSA_start_row + 1, column=FSA_start_column + 9).value = 'Module'
+FSAsht.cell(row=FSA_start_row + 1, column=FSA_start_column + 10).value = 'Signal Name'
+FSAsht.cell(row=FSA_start_row + 1, column=FSA_start_column + 11).value = 'Input Signal Name'
+FSAsht.cell(row=FSA_start_row + 1, column=FSA_start_column + 12).value = 'Output Signal Name'
+FSAsht.cell(row=FSA_start_row + 1, column=FSA_start_column + 13).value = 'Characteristic'
+FSAsht.cell(row=FSA_start_row + 1, column=FSA_start_column + 14).value = 'Signal Name'
+
+# 병합
+for i in range(FSA_start_column, FSA_start_column + 8):
+    FSAsht.merge_cells(start_row=FSA_start_row, start_column=FSA_start_column + i - 1,
+                       end_row=FSA_start_row + 1, end_column=FSA_start_column + i - 1)
+    FSAsht.merge_cells(start_row=FSA_start_row, start_column=FSA_start_column + 8,
+                       end_row=FSA_start_row, end_column=FSA_start_column + 10)
+    FSAsht.merge_cells(start_row=FSA_start_row, start_column=FSA_start_column + 11,
+                       end_row=FSA_start_row, end_column=FSA_start_column + 12)
+    FSAsht.merge_cells(start_row=FSA_start_row, start_column=FSA_start_column + 13,
+                       end_row=FSA_start_row, end_column=FSA_start_column + 14)
+    FSAsht.merge_cells(start_row=FSA_start_row, start_column=FSA_start_column + 15,
+                       end_row=FSA_start_row + 1, end_column=FSA_start_column + 15)
+
+########################################################################################################################
+
+
+### 기능사양 분석서 내용 #################################################################################################
+# 기능사양 분석서 SRS ID 및 Description
+currow = FSA_start_row + 2
+prevcol = FSA_start_column - 1
+for i in range(SRS_start_row + 1, SRS_end_row + 1):
+    for j in range(SRS_start_column + 1, SRS_end_column + 1):
+        if (SRSsht.cell(column=j, row=i).value != None):
+            # ID
+            if (prevcol >= j):
+                currow = currow + 1
+            FSAsht.cell(column=j + FSA_start_column - 2, row=currow).value = \
+                SRSsht.cell(column=SRS_start_column, row=i).value
+            prevcol = j
+            # Description(Requirement)
+            for k in range(j + 1, SRS_end_column + 2):
+                if (SRSsht.cell(column=k, row=i + 1).value != None):
+                    FSAsht.cell(column=j + FSA_start_column - 2, row=currow).value = (
+                        (FSAsht.cell(column=j + FSA_start_column - 2, row=currow).value
+                         + '\n' + SRSsht.cell(column=j, row=i).value)
+                    )
+                    break
+                FSAsht.cell(column=FSA_start_column + 7, row=currow).value = SRSsht.cell(column=j, row=i).value
+FSA_end_row = currow
+
+# 기능 사양 분석서 SRS ID 셀 병합
+merge_start = FSA_start_row + 2
+for j in range(FSA_start_column, FSA_start_column + 4):
+    merge_start = FSA_start_row + 2
+    for i in range(FSA_start_row + 2, FSA_end_row + 1):
+        if (FSAsht.cell(column=j, row=i).value != None):
+            if (i != FSA_start_row + 2):
+                FSAsht.merge_cells(start_row=merge_start, start_column=j, end_row=i - 1, end_column=j)
+                merge_start = i
+        else:
+            b_merge_yes = 0
+            for k in range(j, FSA_start_column + 4):
+                if (FSAsht.cell(column=k, row=i).value != None):
+                    b_merge_yes = 1
+                    if (i == FSA_end_row):
+                        FSAsht.merge_cells(start_row=merge_start, start_column=j, end_row=i, end_column=j)  
+            if (b_merge_yes == 0):
+                merge_start = i
+
+########################################################################################################################
+
+
+### 서식 관련 ###########################################################################################################
+# 텍스트 줄바꿈 적용, 중앙 정렬
+for rows in FSAsht.iter_rows(min_row=FSA_start_row, max_row=FSA_end_row,
+                             min_col=FSA_start_column, max_col=FSA_end_column):
+    for cell in rows:
+        cell.alignment = openpyxl.styles.Alignment(wrapText=True, horizontal='center', vertical='center')
+
+# 셀 너비 자동 조정
+for i in list(string.ascii_uppercase):
+    FSAsht.column_dimensions[i].bestFit = True
+
+# 음영 색 지정
+Color_Blue = openpyxl.styles.PatternFill(start_color='ace2ea', end_color='ace2ea', fill_type='solid')
+Color_Yellow = openpyxl.styles.PatternFill(start_color='f5f5dc', end_color='f5f5dc', fill_type='solid')
+Color_Gray = openpyxl.styles.PatternFill(start_color='d9d9d9', end_color='f5f5dc', fill_type='solid')
+for i in range(FSA_start_column, FSA_start_column + 5):
+    FSAsht.cell(row=FSA_start_row, column=FSA_start_column + i - 1).fill = Color_Blue
+for i in range(FSA_start_column + 5, FSA_start_column + 8):
+    FSAsht.cell(row=FSA_start_row, column=FSA_start_column + i - 1).fill = Color_Yellow
+for i in range(FSA_start_column + 8, FSA_start_column + 16):
+    FSAsht.cell(row=FSA_start_row, column=FSA_start_column + i - 1).fill = Color_Gray
+    FSAsht.cell(row=FSA_start_row + 1, column=FSA_start_column + i - 1).fill = Color_Gray
+
+# 테두리 자동작성
+for j in range(FSA_start_column, FSA_end_column + 1):
+    for i in range(FSA_start_row, FSA_end_row + 1):
+        border_var = openpyxl.styles.Border(
+                        left=openpyxl.styles.Side(border_style="thin", color='FF000000'),
+                        right=openpyxl.styles.Side(border_style="thin", color='FF000000'),
+                        top=openpyxl.styles.Side(border_style="thin", color='FF000000'),
+                        bottom=openpyxl.styles.Side(border_style="thin", color='FF000000'),
+                        diagonal=openpyxl.styles.Side(border_style="thin", color='FF000000'),
+                        diagonal_direction=0,
+                        outline=openpyxl.styles.Side(border_style="thin", color='FF000000'),
+                        vertical=openpyxl.styles.Side(border_style="thin", color='FF000000'),
+                        horizontal=openpyxl.styles.Side(border_style="thin", color='FF000000')
+                    )
+        FSAsht.cell(column=j, row=i).border = border_var
+########################################################################################################################
+
+
+# 기능사양분석서 저장
+FSAsaver = tk.Tk()
+FSAsaver.withdraw()
+FSApath = tkinter.filedialog.asksaveasfilename(filetypes=[('Microsoft Excel File(.xlsx)', '.xlsx'), ('All files', '*')],
+                                               title='Save as..',
+                                               initialfile='*.xlsx')
+
+FSAwb.save(FSApath)
